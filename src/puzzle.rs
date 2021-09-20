@@ -81,7 +81,7 @@ mod tests {
         assert_eq!(puzzle.header.global_checksum, 2253);
         assert_eq!(puzzle.header.header_checksum, 59906);
         assert_eq!(puzzle.header.magic_checksum, 7331058286821292875);
-        assert_eq!(puzzle.header.file_version, "1.2c");
+        assert_eq!(puzzle.header.file_version, "1.2");
         assert_eq!(puzzle.header.scrambled_checksum, 0);
         assert_eq!(puzzle.header.width, 15);
         assert_eq!(puzzle.header.height, 15);

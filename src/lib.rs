@@ -4,25 +4,11 @@ mod puzzle_buffer;
 mod puzzle_type;
 mod solution_state;
 
+pub use puzzle::Puzzle;
+
 /*
 
     def load(self, data):
-        puzzle_data = s.unpack(HEADER_FORMAT)
-        cksum_gbl = puzzle_data[0]
-        # acrossDown = puzzle_data[1]
-        cksum_hdr = puzzle_data[2]
-        cksum_magic = puzzle_data[3]
-        self.fileversion = puzzle_data[4]
-        # since we don't know the role of these bytes, just round-trip them
-        self.unk1 = puzzle_data[5]
-        self.scrambled_cksum = puzzle_data[6]
-        self.unk2 = puzzle_data[7]
-        self.width = puzzle_data[8]
-        self.height = puzzle_data[9]
-        numclues = puzzle_data[10]
-        self.puzzletype = puzzle_data[11]
-        self.solution_state = puzzle_data[12]
-
         self.version = self.fileversion[:3]
         # Once we have fileversion we can guess the encoding
         self.encoding = ENCODING if self.version_tuple()[0] < 2 else ENCODING_UTF8

@@ -37,16 +37,19 @@ impl Header {
         // H
         let header_checksum = reader
             .read_u16::<LittleEndian>()
-            .map_err(|e| Error::msg("Failed to parse header checksum"))?;
+            .map_err(|_e| Error::msg("Failed to parse header checksum"))?;
 
         // Q
         let magic_checksum = reader.read_u64::<LittleEndian>()?;
 
         // 4s
         let mut file_version = [0u8; 4];
-        reader.read_exact(&mut file_version)?;
+        reader
+            .read_exact(&mut file_version)
+            .map_err(|_e| Error::msg("Failed to parse file version"))?;
+
         let file_version = std::str::from_utf8(&file_version)
-            .map_err(|_e| Error::msg("Failed to parse file version"))?
+            .map_err(|_e| Error::msg("Failed to parse file version"))?[..3]
             .to_string();
 
         // 2s unknown 1
