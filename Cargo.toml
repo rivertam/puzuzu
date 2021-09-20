@@ -1,0 +1,11 @@
+[package]
+name = "puzuzu"
+version = "0.1.0"
+authors = ["Ben Berman <ben.m.berman@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+structure = "0.1.2"
+byteorder = "1.4.3"
