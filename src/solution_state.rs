@@ -1,0 +1,3 @@
+pub enum SolutionState {
+    Unlocked,
+}
