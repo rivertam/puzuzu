@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::{Context, Error, Result};
 
 #[derive(Debug)]
 pub struct Header {
@@ -8,9 +8,9 @@ pub struct Header {
     pub file_version: String,
     pub scrambled_checksum: u16,
 
-    pub width: u8,
-    pub height: u8,
-    pub clue_count: u16,
+    pub width: usize,
+    pub height: usize,
+    pub clue_count: usize,
     pub puzzle_type: u16,
     pub solution_state: u16,
 }
@@ -70,28 +70,24 @@ impl Header {
             .map_err(|_e| Error::msg("Failed to parse second set of unknown bytes"))?;
 
         // B
-        let width = reader
-            .read_u8()
-            .map_err(|_e| Error::msg("Failed to parse width"))?;
+        let width = reader.read_u8().context("Failed to parse width")? as usize;
         // B
-        let height = reader
-            .read_u8()
-            .map_err(|_e| Error::msg("Failed to parse height"))?;
+        let height = reader.read_u8().context("Failed to parse height")? as usize;
 
         // H
         let clue_count = reader
             .read_u16::<LittleEndian>()
-            .map_err(|_e| Error::msg("Failed to parse clue count"))?;
+            .context("Failed to parse clue count")? as usize;
 
         // H
         let puzzle_type = reader
             .read_u16::<LittleEndian>()
-            .map_err(|_e| Error::msg("Failed to parse puzzle type"))?;
+            .context("Failed to parse puzzle type")?;
 
         // H
         let solution_state = reader
             .read_u16::<LittleEndian>()
-            .map_err(|_e| Error::msg("Failed to parse solution state"))?;
+            .context("Failed to parse solution state")?;
 
         Ok(Header {
             global_checksum,
@@ -106,5 +102,27 @@ impl Header {
             puzzle_type,
             solution_state,
         })
+    }
+
+    /// Parse file version as (major, minor) tuple
+    pub fn version_tuple(&self) -> Result<(u64, u64)> {
+        let split = self.file_version.as_str().split(".").collect::<Vec<_>>();
+
+        if split.len() != 2 {
+            return Err(Error::msg(format!(
+                "Expected 2 part file version; received {} parts",
+                split.len()
+            )));
+        }
+
+        let major = split[0]
+            .parse::<u64>()
+            .context(format!("Received non-integer major version: {}", split[0]))?;
+
+        let minor = split[1]
+            .parse::<u64>()
+            .context(format!("Received non-integer minor version: {}", split[0]))?;
+
+        Ok((major, minor))
     }
 }

@@ -1,34 +1,39 @@
 use crate::header::Header;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::io::Cursor;
 use thiserror::Error;
-
-const HEADER_FORMAT: &'static str = "<
- H 11s        xH
- Q       4s  2sH
- 12s         BBH
- H H ";
 
 /// Wraps a data buffer
 pub struct PuzzleBuffer<'a> {
     data: &'a [u8],
-    encoding: String,
     cursor: Cursor<&'a [u8]>,
+    decoder: fn(&[u8]) -> Result<String>,
 }
 
 #[derive(Error, Debug)]
 pub enum PuzzleBufferError {
     #[error("Cannot find '{0}' in data")]
     SeekError(String),
+    #[error("Encoding has not been inferred")]
+    EncodingNotInferred,
 }
 
 impl<'a> PuzzleBuffer<'a> {
-    pub fn new(data: &'a [u8], encoding: String) -> PuzzleBuffer<'a> {
+    pub fn new(data: &'a [u8]) -> PuzzleBuffer<'a> {
         PuzzleBuffer {
             data,
-            encoding,
             cursor: Cursor::new(data),
+            decoder: |_bytes| Err(PuzzleBufferError::EncodingNotInferred.into()),
         }
+    }
+
+    pub fn set_decoder(&mut self, decoder: fn(&[u8]) -> Result<String>) {
+        self.decoder = decoder;
+    }
+
+    fn decode_string(&self, bytes: &[u8]) -> Result<String> {
+        let decoder = self.decoder;
+        decoder(bytes)
     }
 
     fn position(&self) -> usize {
@@ -68,6 +73,34 @@ impl<'a> PuzzleBuffer<'a> {
     pub fn unpack_header(&mut self) -> Result<Header> {
         Header::from_cursor(&mut self.cursor)
     }
+
+    pub fn unpack_solution(&mut self, width: usize, height: usize) -> Result<String> {
+        use std::io::Read;
+        let mut solution = vec![0u8; width * height];
+        self.cursor.read_exact(&mut solution)?;
+
+        self.decode_string(&solution)
+    }
+
+    pub fn unpack_fill(&mut self, width: usize, height: usize) -> Result<String> {
+        use std::io::Read;
+        let mut fill = vec![0u8; width * height];
+        self.cursor.read_exact(&mut fill)?;
+
+        self.decode_string(&fill)
+    }
+
+    pub fn read_string(&mut self) -> Result<String> {
+        use std::io::BufRead;
+        let mut buf = vec![];
+        self.cursor
+            .read_until('\0' as u8, &mut buf)
+            .context(format!("Failed to find null-terminated string"))?;
+
+        buf.pop();
+
+        self.decode_string(&buf)
+    }
 }
 
 #[cfg(test)]
@@ -77,13 +110,12 @@ mod tests {
     #[test]
     fn test_seek_to() {
         let data = "Hello there".as_bytes();
-        let mut buffer = PuzzleBuffer::new(&data, "UTF-8".to_string());
+        let mut buffer = PuzzleBuffer::new(&data);
 
         assert!(buffer.seek_to("there", 2).is_ok());
         assert_eq!(buffer.position(), "Hello ".len() + 2);
 
         let err = buffer.seek_to("there", 2);
-        println!("{:?}", err);
         assert!(err.is_err());
         assert_eq!(err.unwrap_err().to_string(), "Cannot find 'there' in data");
     }

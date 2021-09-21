@@ -9,7 +9,6 @@ pub use puzzle::Puzzle;
 /*
 
     def load(self, data):
-        self.version = self.fileversion[:3]
         # Once we have fileversion we can guess the encoding
         self.encoding = ENCODING if self.version_tuple()[0] < 2 else ENCODING_UTF8
         s.encoding = self.encoding
