@@ -90,7 +90,9 @@ impl Puzzle {
             helpers: HashMap::new(),
         };
 
-        let calculated_checksum = puz.global_checksum()?;
+        let calculated_checksum = puz
+            .calculate_global_checksum()
+            .context("Failed to calculate global checksum")?;
         if calculated_checksum != puz.header.global_checksum {
             return Err(Error::msg(format!(
                 "Calculated global checksum {} does not match header checksum {}",
@@ -98,7 +100,10 @@ impl Puzzle {
             )));
         }
 
-        let calculated_header_checksum = puz.header.calculate_checksum()?;
+        let calculated_header_checksum = puz
+            .header
+            .calculate_checksum()
+            .context("Failed to calculate header checksum")?;
         if calculated_header_checksum != puz.header.header_checksum {
             return Err(Error::msg(format!(
                 "Calculated header checksum {} does not match header checksum {}",
@@ -106,15 +111,58 @@ impl Puzzle {
             )));
         }
 
+        let calculated_magic_checksum = puz
+            .calculate_magic_checksum()
+            .context("Failed to calculate magic checksum")?;
+        if calculated_magic_checksum != puz.header.magic_checksum {
+            return Err(Error::msg(format!(
+                "Calculated magic checksum {} does not match header checksum {}",
+                calculated_magic_checksum, puz.header.magic_checksum
+            )));
+        }
+
         Ok(puz)
     }
 
-    fn global_checksum(&self) -> Result<u16> {
+    fn calculate_global_checksum(&self) -> Result<u16> {
         let encode = self.header.get_encoder()?;
         let mut checksum = self.header.header_checksum;
         checksum = data_checksum(&encode(&self.solution)?, checksum);
         checksum = data_checksum(&encode(&self.fill)?, checksum);
         self.text_checksum(checksum)
+    }
+
+    fn calculate_magic_checksum(&self) -> Result<u64> {
+        let encode = self.header.get_encoder()?;
+        const MASK_STRING: &'static str = "ICHEATED";
+        let magic_checksum =
+            [
+                self.header.calculate_checksum()?,
+                data_checksum(&encode(&self.solution)?, 0),
+                data_checksum(&encode(&self.fill)?, 0),
+                self.text_checksum(0)?,
+            ]
+            .iter()
+            .enumerate()
+            .rev()
+            .fold(0, |mut magic_checksum, (index, checksum)| {
+                magic_checksum <<= 8;
+
+                magic_checksum |= MASK_STRING.chars().nth(index).expect(
+                    "index somehow out of range in mask string when calculating magic checksum",
+                ) as u64
+                    ^ (*checksum as u64 & 0x00ff);
+
+                magic_checksum |= (MASK_STRING.chars().nth(index + 4).expect(
+                    "index somehow out of range in mask string when calculating magic checksum",
+                ) as u64
+                    ^ (*checksum as u64 >> 8))
+                    << 32;
+
+                magic_checksum
+            });
+
+        Ok(magic_checksum)
     }
 
     fn text_checksum(&self, mut checksum: u16) -> Result<u16> {
