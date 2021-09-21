@@ -93,8 +93,16 @@ impl Puzzle {
         let calculated_checksum = puz.global_checksum()?;
         if calculated_checksum != puz.header.global_checksum {
             return Err(Error::msg(format!(
-                "Calculated checksum {} does not match header checksum {}",
+                "Calculated global checksum {} does not match header checksum {}",
                 calculated_checksum, puz.header.global_checksum
+            )));
+        }
+
+        let calculated_header_checksum = puz.header.calculate_checksum()?;
+        if calculated_header_checksum != puz.header.header_checksum {
+            return Err(Error::msg(format!(
+                "Calculated header checksum {} does not match header checksum {}",
+                calculated_header_checksum, puz.header.header_checksum
             )));
         }
 

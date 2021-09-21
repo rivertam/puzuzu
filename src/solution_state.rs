@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SolutionState {
     /// solution is available in plaintext
     Unlocked,
@@ -16,6 +16,15 @@ impl TryFrom<u16> for SolutionState {
             0x0000 => Ok(SolutionState::Unlocked),
             0x0004 => Ok(SolutionState::Locked),
             _ => Err(()),
+        }
+    }
+}
+
+impl Into<u16> for SolutionState {
+    fn into(self) -> u16 {
+        match self {
+            SolutionState::Unlocked => 0x0000,
+            SolutionState::Locked => 0x0004,
         }
     }
 }

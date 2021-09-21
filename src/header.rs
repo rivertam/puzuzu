@@ -1,3 +1,4 @@
+use crate::data_checksum::data_checksum;
 use crate::puzzle_type::PuzzleType;
 use crate::solution_state::SolutionState;
 use anyhow::{Context, Error, Result};
@@ -174,5 +175,33 @@ impl Header {
                     .map_err(|_err| Error::msg(format!("Encoding {} with UTF-8 failed", string)))
             })
         }
+    }
+
+    pub fn calculate_checksum(&self) -> Result<u16> {
+        use byteorder::{LittleEndian, WriteBytesExt};
+        // pack ('<BBH H H ')
+        let mut buffer = vec![];
+
+        buffer
+            .write_u8(self.width as u8)
+            .context("Failed to pack width")?;
+
+        buffer
+            .write_u8(self.height as u8)
+            .context("Failed to pack height")?;
+
+        buffer
+            .write_u16::<LittleEndian>(self.clue_count as u16)
+            .context("Failed to pack clue count")?;
+
+        buffer
+            .write_u16::<LittleEndian>(self.puzzle_type.into())
+            .context("Failed to pack puzzle type")?;
+
+        buffer
+            .write_u16::<LittleEndian>(self.solution_state.into())
+            .context("Failed to pack solution state")?;
+
+        Ok(data_checksum(&buffer, 0))
     }
 }
