@@ -1,9 +1,8 @@
+use crate::data_checksum::data_checksum;
 use crate::extension::Extension;
 use crate::header::Header;
 use crate::puzzle_buffer::PuzzleBuffer;
 use anyhow::{Context, Error, Result};
-use encoding::all::{ISO_8859_1, UTF_8};
-use encoding::{DecoderTrap, Encoding};
 use std::collections::HashMap;
 
 const ACROSSDOWN: &'static str = "ACROSS&DOWN";
@@ -41,24 +40,7 @@ impl Puzzle {
 
         let header = buffer.unpack_header()?;
 
-        // once we have the file version, we can guess the encoding
-        if header.version_tuple()?.0 < 2 {
-            buffer.set_decoder(|bytes| {
-                ISO_8859_1
-                    .decode(bytes, DecoderTrap::Strict)
-                    .map_err(|_err| {
-                        Error::msg(
-                            "puz file has version < 3, but decoding using ISO8859-1 was unsuccessful",
-                        )
-                    })
-            });
-        } else {
-            buffer.set_decoder(|bytes| {
-                UTF_8.decode(bytes, DecoderTrap::Strict).map_err(|_err| {
-                    Error::msg("puz file is version > 2 but decoding using UTF-8 was unsuccessful")
-                })
-            });
-        };
+        buffer.set_decoder(header.get_decoder()?);
 
         let solution = buffer.unpack_solution(header.width, header.height)?;
 
@@ -108,7 +90,54 @@ impl Puzzle {
             helpers: HashMap::new(),
         };
 
+        let calculated_checksum = puz.global_checksum()?;
+        if calculated_checksum != puz.header.global_checksum {
+            return Err(Error::msg(format!(
+                "Calculated checksum {} does not match header checksum {}",
+                calculated_checksum, puz.header.global_checksum
+            )));
+        }
+
         Ok(puz)
+    }
+
+    fn global_checksum(&self) -> Result<u16> {
+        let encode = self.header.get_encoder()?;
+        let mut checksum = self.header.header_checksum;
+        checksum = data_checksum(&encode(&self.solution)?, checksum);
+        checksum = data_checksum(&encode(&self.fill)?, checksum);
+        self.text_checksum(checksum)
+    }
+
+    fn text_checksum(&self, mut checksum: u16) -> Result<u16> {
+        let encode = self.header.get_encoder()?;
+        let encode_zstring = move |string| {
+            encode(string).map(|mut encoded| {
+                encoded.push('\0' as u8);
+                encoded
+            })
+        };
+        // for the checksum to work these fields must be added in order with
+        // null termination, followed by all non-empty clues without null
+        // termination, followed by notes (but only for version >= 1.3)
+        checksum = data_checksum(&encode_zstring(&self.title)?, checksum);
+        checksum = data_checksum(&encode_zstring(&self.author)?, checksum);
+        checksum = data_checksum(&encode_zstring(&self.copyright)?, checksum);
+
+        checksum = self
+            .clues
+            .iter()
+            .fold(Ok(checksum), |sum: Result<u16>, clue| {
+                Ok(data_checksum(&encode(clue)?, sum?))
+            })?;
+
+        let (major, minor) = self.header.version_tuple()?;
+        // notes included in global checksum starting v1.3 of format
+        if major > 1 || major == 1 && minor >= 3 {
+            checksum = data_checksum(&encode_zstring(&self.notes)?, checksum)
+        }
+
+        Ok(checksum)
     }
 }
 

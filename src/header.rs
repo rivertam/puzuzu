@@ -1,6 +1,8 @@
 use crate::puzzle_type::PuzzleType;
 use crate::solution_state::SolutionState;
 use anyhow::{Context, Error, Result};
+use encoding::all::{ISO_8859_1, UTF_8};
+use encoding::{DecoderTrap, EncoderTrap, Encoding};
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -134,5 +136,43 @@ impl Header {
             .context(format!("Received non-integer minor version: {}", split[0]))?;
 
         Ok((major, minor))
+    }
+
+    pub fn get_decoder(&self) -> Result<fn(&[u8]) -> Result<String>> {
+        if self.version_tuple()?.0 < 2 {
+            Ok(|bytes| {
+                ISO_8859_1
+                    .decode(bytes, DecoderTrap::Strict)
+                    .map_err(|_err| {
+                        Error::msg(
+                            "puz file has version < 3, but decoding using ISO8859-1 was unsuccessful",
+                        )
+                    })
+            })
+        } else {
+            Ok(|bytes| {
+                UTF_8.decode(bytes, DecoderTrap::Strict).map_err(|_err| {
+                    Error::msg("puz file is version > 2 but decoding using UTF-8 was unsuccessful")
+                })
+            })
+        }
+    }
+
+    pub fn get_encoder(&self) -> Result<fn(&str) -> Result<Vec<u8>>> {
+        if self.version_tuple()?.0 < 2 {
+            Ok(|string| {
+                ISO_8859_1
+                    .encode(string, EncoderTrap::Strict)
+                    .map_err(|_err| {
+                        Error::msg(format!("Encoding {} with ISO8859-1 failed", string))
+                    })
+            })
+        } else {
+            Ok(|string| {
+                UTF_8
+                    .encode(string, EncoderTrap::Strict)
+                    .map_err(|_err| Error::msg(format!("Encoding {} with UTF-8 failed", string)))
+            })
+        }
     }
 }

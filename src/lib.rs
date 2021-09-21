@@ -1,3 +1,4 @@
+mod data_checksum;
 mod extension;
 mod header;
 mod puzzle;
