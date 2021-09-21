@@ -1,3 +1,4 @@
+use crate::data_checksum::data_checksum;
 use anyhow::{Context, Error, Result};
 use std::collections::HashMap;
 
@@ -50,12 +51,9 @@ impl Extension {
     ) -> Result<Vec<Extension>> {
         use byteorder::ReadBytesExt;
         use std::io::Read;
-        let mut extension_checksums = HashMap::new();
         let mut extensions = vec![];
 
         while let Ok(header) = ExtensionHeader::parse_from_cursor(reader) {
-            extension_checksums.insert(header.code, header.checksum);
-
             // extension data is represented as a null-terminated string,
             // but since the data can contain nulls we can't use read_string
             let mut extension_bytes = vec![0u8; header.length as usize];
@@ -67,6 +65,18 @@ impl Extension {
             reader
                 .read_u8()
                 .context("Failed to see trailing byte after extension")?;
+            let calculated_checksum = data_checksum(&extension_bytes, 0);
+            if calculated_checksum != header.checksum {
+                return Err(Error::msg(format!(
+                    "Extension {} calculated checksum ({}) does not match header ({})",
+                    std::str::from_utf8(&header.code).context(format!(
+                        "Failed to stringify extension code {:?}",
+                        header.code
+                    ))?,
+                    calculated_checksum,
+                    header.checksum
+                )));
+            }
 
             extensions.push(Extension {
                 code: header.code,
