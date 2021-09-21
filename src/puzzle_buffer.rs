@@ -1,3 +1,4 @@
+use crate::extension::Extension;
 use crate::header::Header;
 use anyhow::{Context, Result};
 use std::io::Cursor;
@@ -90,7 +91,7 @@ impl<'a> PuzzleBuffer<'a> {
         self.decode_string(&fill)
     }
 
-    pub fn read_string(&mut self) -> Result<String> {
+    pub fn unpack_string(&mut self) -> Result<String> {
         use std::io::BufRead;
         let mut buf = vec![];
         self.cursor
@@ -100,6 +101,10 @@ impl<'a> PuzzleBuffer<'a> {
         buf.pop();
 
         self.decode_string(&buf)
+    }
+
+    pub fn unpack_extensions(&mut self) -> Result<Vec<Extension>> {
+        Extension::parse_extensions_from_cursor(&mut self.cursor)
     }
 }
 

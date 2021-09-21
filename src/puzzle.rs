@@ -1,10 +1,10 @@
+use crate::extension::Extension;
 use crate::header::Header;
 use crate::puzzle_buffer::PuzzleBuffer;
-use crate::puzzle_type::PuzzleType;
-use crate::solution_state::SolutionState;
 use anyhow::{Context, Error, Result};
 use encoding::all::{ISO_8859_1, UTF_8};
 use encoding::{DecoderTrap, Encoding};
+use std::collections::HashMap;
 
 const ACROSSDOWN: &'static str = "ACROSS&DOWN";
 
@@ -12,7 +12,7 @@ const ACROSSDOWN: &'static str = "ACROSS&DOWN";
 pub struct Puzzle {
     pub preamble: Vec<u8>,
     pub header: Header,
-    pub postscript: String,
+    pub postscript: Vec<u8>,
     pub title: String,
     pub author: String,
     pub copyright: String,
@@ -23,14 +23,10 @@ pub struct Puzzle {
 
     pub clues: Vec<String>,
     pub notes: String,
-    pub extensions: Vec<String>,
-    /// The following is so that we can round-trip values in order
-    pub extensions_order: Vec<String>,
-    pub puzzle_type: PuzzleType,
-    pub solution_state: SolutionState,
+    pub extensions: Vec<Extension>,
 
     /// Add-ons like Rebus
-    pub helpers: std::collections::HashMap<String, String>,
+    pub helpers: HashMap<String, String>,
 }
 
 impl Puzzle {
@@ -68,34 +64,48 @@ impl Puzzle {
 
         let fill = buffer.unpack_fill(header.width, header.height)?;
 
-        let title = buffer.read_string().context("Failed to parse title")?;
-        let author = buffer.read_string().context("Failed to parse author")?;
-        let copyright = buffer.read_string().context("Failed to parse copyright")?;
+        let title = buffer.unpack_string().context("Failed to parse title")?;
+        let author = buffer.unpack_string().context("Failed to parse author")?;
+        let copyright = buffer
+            .unpack_string()
+            .context("Failed to parse copyright")?;
 
         let clues =
-            (0..header.clue_count).fold(Ok(vec![]), |previous, _| -> Result<Vec<String>> {
+            (0..header.clue_count).fold(Ok(vec![]), |previous, index| -> Result<Vec<String>> {
                 previous.and_then(|mut clues| {
-                    clues.push(buffer.read_string()?);
+                    clues.push(
+                        buffer
+                            .unpack_string()
+                            .context(format!("Failed to parse clue #{}", index))?,
+                    );
+
                     Ok(clues)
                 })
             })?;
 
+        let notes = buffer.unpack_string().context("Failed to parse notes")?;
+
+        let extensions = buffer
+            .unpack_extensions()
+            .context("Failed to unpack extensions")?;
+
+        // sometimes there's some extra garbage at
+        // the end of the file, usually \r\n
+        let postscript = buffer.upcoming().into();
+
         let puz = Self {
             header,
             preamble,
-            postscript: "".to_string(),
+            postscript,
             title,
             author,
             copyright,
             fill,
             solution,
             clues,
-            notes: "".to_string(),
-            extensions: vec![],
-            extensions_order: vec![],
-            puzzle_type: PuzzleType::Normal,
-            solution_state: SolutionState::Unlocked,
-            helpers: std::collections::HashMap::new(),
+            notes,
+            extensions,
+            helpers: HashMap::new(),
         };
 
         Ok(puz)
@@ -104,7 +114,7 @@ impl Puzzle {
 
 #[cfg(test)]
 mod tests {
-    use super::Puzzle;
+    use crate::{Puzzle, PuzzleType, SolutionState};
     #[test]
     fn test_header_parsing() {
         let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
@@ -118,8 +128,8 @@ mod tests {
         assert_eq!(puzzle.header.width, 15);
         assert_eq!(puzzle.header.height, 15);
         assert_eq!(puzzle.header.clue_count, 78);
-        assert_eq!(puzzle.header.puzzle_type, 1);
-        assert_eq!(puzzle.header.solution_state, 0);
+        assert_eq!(puzzle.header.puzzle_type, PuzzleType::Normal);
+        assert_eq!(puzzle.header.solution_state, SolutionState::Unlocked);
     }
 
     #[test]

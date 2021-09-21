@@ -1,4 +1,7 @@
+use crate::puzzle_type::PuzzleType;
+use crate::solution_state::SolutionState;
 use anyhow::{Context, Error, Result};
+use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct Header {
@@ -11,8 +14,8 @@ pub struct Header {
     pub width: usize,
     pub height: usize,
     pub clue_count: usize,
-    pub puzzle_type: u16,
-    pub solution_state: u16,
+    pub puzzle_type: PuzzleType,
+    pub solution_state: SolutionState,
 }
 
 impl Header {
@@ -84,10 +87,17 @@ impl Header {
             .read_u16::<LittleEndian>()
             .context("Failed to parse puzzle type")?;
 
+        let puzzle_type = PuzzleType::try_from(puzzle_type)
+            .map_err(|_e| Error::msg(format!("{} is not a known puzzle type", puzzle_type)))?;
+
         // H
         let solution_state = reader
             .read_u16::<LittleEndian>()
             .context("Failed to parse solution state")?;
+
+        let solution_state = SolutionState::try_from(solution_state).map_err(|_e| {
+            Error::msg(format!("{} is not a known solution state", solution_state))
+        })?;
 
         Ok(Header {
             global_checksum,

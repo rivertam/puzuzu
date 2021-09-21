@@ -1,3 +1,4 @@
+mod extension;
 mod header;
 mod puzzle;
 mod puzzle_buffer;
@@ -5,24 +6,12 @@ mod puzzle_type;
 mod solution_state;
 
 pub use puzzle::Puzzle;
+pub use puzzle_type::PuzzleType;
+pub use solution_state::SolutionState;
 
 /*
 
     def load(self, data):
-        # Once we have fileversion we can guess the encoding
-        self.encoding = ENCODING if self.version_tuple()[0] < 2 else ENCODING_UTF8
-        s.encoding = self.encoding
-
-        self.solution = s.read(self.width * self.height).decode(self.encoding)
-        self.fill = s.read(self.width * self.height).decode(self.encoding)
-
-        self.title = s.read_string()
-        self.author = s.read_string()
-        self.copyright = s.read_string()
-
-        self.clues = [s.read_string() for i in range(0, numclues)]
-        self.notes = s.read_string()
-
         ext_cksum = {}
         while s.can_unpack(EXTENSION_HEADER_FORMAT):
             code, length, cksum = s.unpack(EXTENSION_HEADER_FORMAT)
