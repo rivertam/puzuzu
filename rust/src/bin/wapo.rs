@@ -1,5 +1,11 @@
 use anyhow::Result;
 use puzuzu::Puzzle;
+use std::io;
+enum Screen {
+    Normal,
+    Help,
+    Stats,
+}
 
 fn main() -> Result<()> {
     let bytes = std::fs::read("./test_files/washpost.puz").unwrap();

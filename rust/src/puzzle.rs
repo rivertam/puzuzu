@@ -5,17 +5,19 @@ use crate::puzzle_buffer::PuzzleBuffer;
 use crate::Clues;
 use anyhow::{Context, Error, Result};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 const ACROSSDOWN: &'static str = "ACROSS&DOWN";
 
-/// Represents a puzzle
+/// Represents a crossword puzzle
+#[wasm_bindgen]
 pub struct Puzzle {
     pub(crate) preamble: Vec<u8>,
-    pub header: Header,
+    pub(crate) header: Header,
     pub(crate) postscript: Vec<u8>,
-    pub title: String,
-    pub author: String,
-    pub copyright: String,
+    pub(crate) title: String,
+    pub(crate) author: String,
+    pub(crate) copyright: String,
 
     pub(crate) fill: String,
 
@@ -24,6 +26,39 @@ pub struct Puzzle {
     pub(crate) all_clues: Vec<String>,
     pub(crate) notes: String,
     pub(crate) extensions: Vec<Extension>,
+}
+
+#[wasm_bindgen]
+impl Puzzle {
+    #[wasm_bindgen(getter)]
+    pub fn title(&self) -> String {
+        self.title.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn author(&self) -> String {
+        self.author.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn copyright(&self) -> String {
+        self.copyright.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn height(&self) -> usize {
+        self.header.height
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn width(&self) -> usize {
+        self.header.width
+    }
+}
+
+#[wasm_bindgen(js_name = parsePuz)]
+pub fn parse_puz(data: &[u8]) -> std::result::Result<Puzzle, JsValue> {
+    Puzzle::from_puz(data.into()).map_err(|error| JsValue::from_str(&format!("{:?}", error)))
 }
 
 impl Puzzle {
@@ -205,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_header_parsing() {
-        let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
+        let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
         assert_eq!(puzzle.header.global_checksum, 2253);
@@ -222,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_solution_parsing() {
-        let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
+        let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
         assert_eq!(puzzle.solution, "");
@@ -230,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_fill_parsing() {
-        let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
+        let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
         assert_eq!(puzzle.fill, "");
@@ -238,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_clues() -> Result<()> {
-        let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
+        let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
         let clues = puzzle.clues()?;

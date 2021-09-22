@@ -1,3 +1,4 @@
-/target
+rust/target
 Cargo.lock
 *.rustfmt
+node_modules
