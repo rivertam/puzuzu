@@ -2,6 +2,7 @@ use crate::data_checksum::data_checksum;
 use crate::extension::Extension;
 use crate::header::Header;
 use crate::puzzle_buffer::PuzzleBuffer;
+use crate::Clues;
 use anyhow::{Context, Error, Result};
 use std::collections::HashMap;
 
@@ -9,23 +10,20 @@ const ACROSSDOWN: &'static str = "ACROSS&DOWN";
 
 /// Represents a puzzle
 pub struct Puzzle {
-    pub preamble: Vec<u8>,
+    pub(crate) preamble: Vec<u8>,
     pub header: Header,
-    pub postscript: Vec<u8>,
+    pub(crate) postscript: Vec<u8>,
     pub title: String,
     pub author: String,
     pub copyright: String,
 
-    pub fill: String,
+    pub(crate) fill: String,
 
-    pub solution: String,
+    pub(crate) solution: String,
 
-    pub clues: Vec<String>,
-    pub notes: String,
-    pub extensions: Vec<Extension>,
-
-    /// Add-ons like Rebus
-    pub helpers: HashMap<String, String>,
+    pub(crate) all_clues: Vec<String>,
+    pub(crate) notes: String,
+    pub(crate) extensions: Vec<Extension>,
 }
 
 impl Puzzle {
@@ -52,7 +50,7 @@ impl Puzzle {
             .unpack_string()
             .context("Failed to parse copyright")?;
 
-        let clues =
+        let all_clues =
             (0..header.clue_count).fold(Ok(vec![]), |previous, index| -> Result<Vec<String>> {
                 previous.and_then(|mut clues| {
                     clues.push(
@@ -84,10 +82,9 @@ impl Puzzle {
             copyright,
             fill,
             solution,
-            clues,
+            all_clues,
             notes,
             extensions,
-            helpers: HashMap::new(),
         };
 
         let calculated_checksum = puz
@@ -181,7 +178,7 @@ impl Puzzle {
         checksum = data_checksum(&encode_zstring(&self.copyright)?, checksum);
 
         checksum = self
-            .clues
+            .all_clues
             .iter()
             .fold(Ok(checksum), |sum: Result<u16>, clue| {
                 Ok(data_checksum(&encode(clue)?, sum?))
@@ -195,11 +192,17 @@ impl Puzzle {
 
         Ok(checksum)
     }
+
+    pub fn clues(&self) -> Result<Clues> {
+        Clues::for_puzzle(&self)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Puzzle, PuzzleType, SolutionState};
+    use crate::{Clue, Puzzle, PuzzleType, SolutionState};
+    use anyhow::Result;
+
     #[test]
     fn test_header_parsing() {
         let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
@@ -234,10 +237,18 @@ mod tests {
     }
 
     #[test]
-    fn test_clues() {
+    fn test_clues() -> Result<()> {
         let bytes = std::fs::read("./test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
-        assert_eq!(puzzle.clues, Vec::<String>::new());
+        let clues = puzzle.clues()?;
+        assert_eq!(clues.across, Vec::<Clue>::new());
+
+        assert_eq!(
+            clues.across.len() * clues.down.len(),
+            puzzle.header.clue_count
+        );
+
+        Ok(())
     }
 }
