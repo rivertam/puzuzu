@@ -2,15 +2,19 @@ use crate::grid::Grid;
 use crate::square::Square;
 use crate::Puzzle;
 use anyhow::{Context, Error, Result};
+use serde::Serialize;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Clue {
-    pub number: usize,
-    pub clue: String,
+    #[serde(rename = "clueNumber")]
+    pub clue_number: usize,
+    pub text: String,
+    #[serde(rename = "cellIndex")]
     pub cell_index: usize,
     pub length: usize,
 }
 
+#[derive(Serialize)]
 pub struct Clues {
     pub across: Vec<Clue>,
     pub down: Vec<Clue>,
@@ -39,8 +43,8 @@ impl Clues {
 
             if is_across && len_across > 1 {
                 across.push(Clue {
-                    number: clue_number,
-                    clue: clue_iter
+                    clue_number: clue_number,
+                    text: clue_iter
                         .next()
                         .ok_or(Error::msg("Ran out of provided clues"))?
                         .to_string(),
@@ -57,8 +61,8 @@ impl Clues {
 
             if is_down && len_down > 1 {
                 down.push(Clue {
-                    number: clue_number,
-                    clue: clue_iter
+                    clue_number: clue_number,
+                    text: clue_iter
                         .next()
                         .ok_or(Error::msg("Ran out of provided clues"))?
                         .to_string(),

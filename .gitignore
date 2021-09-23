@@ -2,3 +2,5 @@ rust/target
 Cargo.lock
 *.rustfmt
 node_modules
+dist
+pkg

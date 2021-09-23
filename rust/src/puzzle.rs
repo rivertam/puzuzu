@@ -54,6 +54,16 @@ impl Puzzle {
     pub fn width(&self) -> usize {
         self.header.width
     }
+
+    #[wasm_bindgen(js_name = clues)]
+    pub fn clues_js(&self) -> std::result::Result<JsValue, JsValue> {
+        JsValue::from_serde(
+            &self.clues().map_err(|error| {
+                JsValue::from_str(&format!("Failed to number clues: {:?}", error))
+            })?,
+        )
+        .map_err(|error| JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error)))
+    }
 }
 
 #[wasm_bindgen(js_name = parsePuz)]
