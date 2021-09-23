@@ -16,9 +16,12 @@ pub struct Puzzle {
     pub(crate) preamble: Vec<u8>,
     pub(crate) header: Header,
     pub(crate) postscript: Vec<u8>,
-    pub(crate) title: String,
-    pub(crate) author: String,
-    pub(crate) copyright: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub title: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub author: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub copyright: String,
 
     pub(crate) fill: String,
 
@@ -33,21 +36,6 @@ pub struct Puzzle {
 
 #[wasm_bindgen]
 impl Puzzle {
-    #[wasm_bindgen(getter)]
-    pub fn title(&self) -> String {
-        self.title.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn author(&self) -> String {
-        self.author.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn copyright(&self) -> String {
-        self.copyright.clone()
-    }
-
     #[wasm_bindgen(getter)]
     pub fn height(&self) -> usize {
         self.header.height
