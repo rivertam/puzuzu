@@ -38,8 +38,16 @@ impl<'a> Serialize for Grid<'a> {
 }
 
 impl<'a> Grid<'a> {
+    pub fn new(fill: &'a str, width: usize, height: usize) -> Grid<'a> {
+        Self {
+            fill,
+            width,
+            height,
+        }
+    }
+
     pub fn for_puzzle(puzzle: &'a Puzzle) -> Grid<'a> {
-        Grid {
+        Self {
             fill: &puzzle.fill,
             width: puzzle.header.width,
             height: puzzle.header.height,

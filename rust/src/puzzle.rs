@@ -25,6 +25,7 @@ pub struct Puzzle {
     pub(crate) solution: String,
 
     pub(crate) all_clues: Vec<String>,
+    pub(crate) clues: Clues,
     pub(crate) notes: String,
     pub(crate) extensions: Vec<Extension>,
 }
@@ -58,12 +59,9 @@ impl Puzzle {
 
     #[wasm_bindgen(js_name = clues)]
     pub fn clues_js(&self) -> std::result::Result<JsValue, JsValue> {
-        JsValue::from_serde(
-            &self.clues().map_err(|error| {
-                JsValue::from_str(&format!("Failed to number clues: {:?}", error))
-            })?,
-        )
-        .map_err(|error| JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error)))
+        JsValue::from_serde(&self.clues).map_err(|error| {
+            JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error))
+        })
     }
 
     #[wasm_bindgen(js_name = grid)]
@@ -127,6 +125,8 @@ impl Puzzle {
         // the end of the file, usually \r\n
         let postscript = buffer.upcoming().into();
 
+        let clues = Clues::new(Grid::new(&fill, header.width, header.height), &all_clues)?;
+
         let puz = Self {
             header,
             preamble,
@@ -137,6 +137,7 @@ impl Puzzle {
             fill,
             solution,
             all_clues,
+            clues,
             notes,
             extensions,
         };
@@ -245,10 +246,6 @@ impl Puzzle {
         }
 
         Ok(checksum)
-    }
-
-    pub fn clues(&self) -> Result<Clues> {
-        Clues::for_puzzle(&self)
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::grid::Grid;
 use crate::square::Square;
-use crate::Puzzle;
 use anyhow::{Context, Error, Result};
 use serde::Serialize;
 
@@ -21,16 +20,17 @@ pub struct Clues {
 }
 
 impl Clues {
-    pub fn for_puzzle<'a>(puzzle: &Puzzle) -> Result<Clues> {
-        let grid = Grid::for_puzzle(puzzle);
+    pub fn new<'a, I: std::iter::IntoIterator<Item = &'a String>>(
+        grid: Grid,
+        clue_iter: I,
+    ) -> Result<Clues> {
+        let mut clue_iter = clue_iter.into_iter();
         let mut across = vec![];
         let mut down = vec![];
 
         let mut clue_number = 1;
 
-        let mut clue_iter = puzzle.all_clues.iter();
-
-        for (index, character) in puzzle.fill.chars().enumerate() {
+        for (index, character) in grid.fill.chars().enumerate() {
             if Square::is_black_square(character) {
                 continue;
             }
