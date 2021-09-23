@@ -22,11 +22,45 @@ const commonBoxProperties = {
   style: { border: { fg: 'green' } },
 } as const;
 
+type CellProps = {
+  column: number;
+  row: number;
+  black: boolean;
+};
+
+function Cell(props: CellProps) {
+  const style = props.black
+    ? {
+        fg: 'white',
+        bg: 'black',
+      }
+    : {
+        fg: 'black',
+        bg: 'white',
+      };
+
+  return (
+    <text
+      style={style}
+      top={props.row + 1}
+      left={props.column * 3 + 1}
+      width={3}
+      height={1}
+      padding={0}
+      align="center"
+      valign="middle"
+    >
+      h
+    </text>
+  );
+}
+
 // Rendering a simple centered box
 function App({ puzzle }: { puzzle: Puzzle }) {
-  const { clues } = useMemo(() => {
+  const { clues, grid } = useMemo(() => {
     return {
       clues: puzzle.clues(),
+      grid: puzzle.grid(),
     };
   }, [puzzle]);
 
@@ -39,7 +73,16 @@ function App({ puzzle }: { puzzle: Puzzle }) {
         height="100%"
         {...commonBoxProperties}
       >
-        Hello World!
+        {grid.map((row, rowIndex) =>
+          row.map(({ black }, columnIndex) => (
+            <Cell
+              key={`${rowIndex}-${columnIndex}`}
+              row={rowIndex}
+              column={columnIndex}
+              black={black}
+            />
+          )),
+        )}
       </box>
       <list
         label="Across"
@@ -69,7 +112,6 @@ program.option('-f --file <path>', 'file path');
 program.action(async (args) => {
   const buffer = fs.readFileSync(args.file);
   const puzzle = await Puzzle.fromPuz(buffer);
-
   // Creating our screen
   const screen = blessed.screen({
     autoPadding: true,

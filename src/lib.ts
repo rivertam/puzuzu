@@ -12,6 +12,8 @@ type Clues = {
   down: Array<Clue>;
 };
 
+type Grid = Array<Array<{ black: boolean }>>;
+
 export class Puzzle {
   static async fromPuz(puzData: Uint8Array) {
     const wasm = await import('../rust/pkg');
@@ -26,5 +28,9 @@ export class Puzzle {
 
   public clues(): Clues {
     return this.puzzle.clues();
+  }
+
+  public grid(): Grid {
+    return this.puzzle.grid();
   }
 }

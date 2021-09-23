@@ -1,5 +1,6 @@
 use crate::data_checksum::data_checksum;
 use crate::extension::Extension;
+use crate::grid::Grid;
 use crate::header::Header;
 use crate::puzzle_buffer::PuzzleBuffer;
 use crate::Clues;
@@ -63,6 +64,14 @@ impl Puzzle {
             })?,
         )
         .map_err(|error| JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error)))
+    }
+
+    #[wasm_bindgen(js_name = grid)]
+    pub fn grid_js(&self) -> std::result::Result<JsValue, JsValue> {
+        let grid = Grid::for_puzzle(self);
+        JsValue::from_serde(&grid).map_err(|error| {
+            JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error))
+        })
     }
 }
 

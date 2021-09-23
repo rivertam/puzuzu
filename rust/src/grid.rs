@@ -1,10 +1,40 @@
 use crate::square::Square;
 use crate::Puzzle;
+use serde::ser::{SerializeSeq, Serializer};
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct Cell {
+    black: bool,
+}
 
 pub struct Grid<'a> {
-    fill: &'a str,
-    width: usize,
-    height: usize,
+    pub fill: &'a str,
+    pub width: usize,
+    pub height: usize,
+}
+
+impl<'a> Serialize for Grid<'a> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut rows = serializer.serialize_seq(Some(self.height))?;
+        for row_index in 0..self.height {
+            let mut row = vec![];
+            for column_index in 0..self.width {
+                let cell_index = row_index * self.width + column_index;
+                let square = self
+                    .get_char(cell_index)
+                    .expect("Tried to serialize invalid grid");
+
+                row.push(Cell {
+                    black: Square::is_black_square(square),
+                });
+            }
+
+            rows.serialize_element(&row)?;
+        }
+
+        rows.end()
+    }
 }
 
 impl<'a> Grid<'a> {
