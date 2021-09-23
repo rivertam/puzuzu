@@ -15,7 +15,7 @@ import * as React from 'react';
 import { Command } from 'commander';
 
 import { Grid, Puzzle } from './lib';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const commonBoxProperties = {
   border: { type: 'line' },
@@ -79,18 +79,95 @@ function firstCell(grid: Grid): CellCoordinates {
       }
     }
   }
+
+  throw new Error('no first cell found in grid');
 }
 
-function useActiveCell(
-  grid: Grid,
-): [CellCoordinates, (coords: CellCoordinates) => void] {
-  return useState(() => {
-    return firstCell(grid);
-  });
+type ActiveCell = CellCoordinates & {
+  next(): void;
+  left(): void;
+  right(): void;
+  up(): void;
+  down(): void;
+  direction: 'across' | 'down';
+};
+
+function useActiveCell(grid: Grid): ActiveCell {
+  const [activeCell, setActiveCell] = useState(() => firstCell(grid));
+  const [direction, setDirection] = useState<'across' | 'down'>('across');
+
+  return {
+    ...activeCell,
+    direction,
+    left() {
+      setActiveCell(({ row, column }) => {
+        for (let newColumn = column - 1; newColumn >= 0; --newColumn) {
+          if (!grid[row][newColumn].black) {
+            return { row, column: newColumn };
+          }
+        }
+
+        return { row, column };
+      });
+
+      setDirection('across');
+    },
+    right() {
+      setActiveCell(({ row, column }) => {
+        for (
+          let newColumn = column + 1;
+          newColumn < grid[row].length;
+          ++newColumn
+        ) {
+          if (!grid[row][newColumn].black) {
+            return { row, column: newColumn };
+          }
+        }
+
+        return { row, column };
+      });
+
+      setDirection('across');
+    },
+    up() {
+      setActiveCell(({ row, column }) => {
+        for (let newRow = row - 1; newRow >= 0; --newRow) {
+          if (!grid[newRow][column].black) {
+            return { row: newRow, column };
+          }
+        }
+
+        return { row, column };
+      });
+
+      setDirection('down');
+    },
+    down() {
+      setActiveCell(({ row, column }) => {
+        for (let newRow = row + 1; newRow < grid.length; ++newRow) {
+          if (!grid[newRow][column].black) {
+            return { row: newRow, column };
+          }
+        }
+
+        return { row, column };
+      });
+
+      setDirection('down');
+    },
+
+    next() {},
+  };
 }
 
 // Rendering a simple centered box
-function App({ puzzle }: { puzzle: Puzzle }) {
+function App({
+  puzzle,
+  screen,
+}: {
+  puzzle: Puzzle;
+  screen: blessed.Widgets.Screen;
+}) {
   const { clues, grid } = useMemo(() => {
     return {
       clues: puzzle.clues(),
@@ -98,7 +175,25 @@ function App({ puzzle }: { puzzle: Puzzle }) {
     };
   }, [puzzle]);
 
-  const [activeCell, setActiveCell] = useActiveCell(grid);
+  const activeCell = useActiveCell(grid);
+
+  useEffect(() => {
+    screen.key('left', () => {
+      activeCell.left();
+    });
+
+    screen.key('right', () => {
+      activeCell.right();
+    });
+
+    screen.key('down', () => {
+      activeCell.down();
+    });
+
+    screen.key('up', () => {
+      activeCell.up();
+    });
+  }, [screen]);
 
   return (
     <>
@@ -125,6 +220,7 @@ function App({ puzzle }: { puzzle: Puzzle }) {
 
               return 'inactive';
             })();
+
             return (
               <Cell
                 key={`${rowIndex}-${columnIndex}`}
@@ -176,7 +272,7 @@ program.action(async (args) => {
     return process.exit(0);
   });
 
-  render(<App puzzle={puzzle} />, screen);
+  render(<App puzzle={puzzle} screen={screen} />, screen);
 });
 
 program.parse(process.argv);
