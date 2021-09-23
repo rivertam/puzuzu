@@ -12,7 +12,7 @@ type Clues = {
   down: Array<Clue>;
 };
 
-type Grid = Array<Array<{ black: boolean }>>;
+export type Grid = Array<Array<{ black: boolean }>>;
 
 export class Puzzle {
   static async fromPuz(puzData: Uint8Array) {

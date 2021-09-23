@@ -14,8 +14,8 @@ import { render } from 'react-blessed';
 import * as React from 'react';
 import { Command } from 'commander';
 
-import { Puzzle } from './lib';
-import { useMemo } from 'react';
+import { Grid, Puzzle } from './lib';
+import { useMemo, useState } from 'react';
 
 const commonBoxProperties = {
   border: { type: 'line' },
@@ -23,21 +23,35 @@ const commonBoxProperties = {
 } as const;
 
 type CellProps = {
+  key: string;
   column: number;
   row: number;
-  black: boolean;
+  kind: 'black' | 'active' | 'activeClue' | 'inactive';
 };
 
 function Cell(props: CellProps) {
-  const style = props.black
-    ? {
-        fg: 'white',
-        bg: 'black',
+  const style = (() => {
+    switch (props.kind) {
+      case 'black': {
+        return {
+          fg: 'white',
+          bg: 'black',
+        };
       }
-    : {
-        fg: 'black',
-        bg: 'white',
-      };
+      case 'inactive': {
+        return {
+          fg: 'black',
+          bg: 'white',
+        };
+      }
+      case 'active': {
+        return {
+          fg: 'white',
+          bg: 'blue',
+        };
+      }
+    }
+  })();
 
   return (
     <text
@@ -55,6 +69,26 @@ function Cell(props: CellProps) {
   );
 }
 
+type CellCoordinates = { column: number; row: number };
+
+function firstCell(grid: Grid): CellCoordinates {
+  for (let row = 0; row < grid.length; ++row) {
+    for (let column = 0; column < grid[column].length; ++column) {
+      if (!grid[row][column].black) {
+        return { column, row };
+      }
+    }
+  }
+}
+
+function useActiveCell(
+  grid: Grid,
+): [CellCoordinates, (coords: CellCoordinates) => void] {
+  return useState(() => {
+    return firstCell(grid);
+  });
+}
+
 // Rendering a simple centered box
 function App({ puzzle }: { puzzle: Puzzle }) {
   const { clues, grid } = useMemo(() => {
@@ -63,6 +97,8 @@ function App({ puzzle }: { puzzle: Puzzle }) {
       grid: puzzle.grid(),
     };
   }, [puzzle]);
+
+  const [activeCell, setActiveCell] = useActiveCell(grid);
 
   return (
     <>
@@ -74,14 +110,30 @@ function App({ puzzle }: { puzzle: Puzzle }) {
         {...commonBoxProperties}
       >
         {grid.map((row, rowIndex) =>
-          row.map(({ black }, columnIndex) => (
-            <Cell
-              key={`${rowIndex}-${columnIndex}`}
-              row={rowIndex}
-              column={columnIndex}
-              black={black}
-            />
-          )),
+          row.map(({ black }, columnIndex) => {
+            const kind = (() => {
+              if (black) {
+                return 'black';
+              }
+
+              if (
+                activeCell.row === rowIndex &&
+                activeCell.column === columnIndex
+              ) {
+                return 'active';
+              }
+
+              return 'inactive';
+            })();
+            return (
+              <Cell
+                key={`${rowIndex}-${columnIndex}`}
+                row={rowIndex}
+                column={columnIndex}
+                kind={kind}
+              />
+            );
+          }),
         )}
       </box>
       <list
