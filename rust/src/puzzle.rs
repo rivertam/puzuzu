@@ -25,7 +25,8 @@ pub struct Puzzle {
     pub(crate) solution: String,
 
     pub(crate) all_clues: Vec<String>,
-    pub(crate) clues: Clues,
+    #[wasm_bindgen(skip)]
+    pub clues: Clues,
     pub(crate) notes: String,
     pub(crate) extensions: Vec<Extension>,
 }
@@ -292,11 +293,10 @@ mod tests {
         let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
-        let clues = puzzle.clues()?;
-        assert_eq!(clues.across, Vec::<Clue>::new());
+        assert_eq!(puzzle.clues.across, Vec::<Clue>::new());
 
         assert_eq!(
-            clues.across.len() * clues.down.len(),
+            puzzle.clues.across.len() * puzzle.clues.down.len(),
             puzzle.header.clue_count
         );
 
