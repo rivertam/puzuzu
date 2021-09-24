@@ -1,13 +1,3 @@
-//
-// async function main() {
-//   const fileContents = fs.readFileSync('../test_files/washpost.puz');
-//
-//   const puzzle = await Puzzle.fromPuz(Uint8Array.from(fileContents));
-//   console.log('did the puzz', puzzle);
-// }
-//
-// main();
-
 import * as fs from 'fs';
 import * as blessed from 'blessed';
 import { render } from 'react-blessed';
@@ -27,6 +17,7 @@ type CellProps = {
   column: number;
   row: number;
   kind: 'black' | 'active' | 'activeClue' | 'inactive';
+  clueNumber?: number;
 };
 
 function Cell(props: CellProps) {
@@ -34,38 +25,47 @@ function Cell(props: CellProps) {
     switch (props.kind) {
       case 'black': {
         return {
-          fg: 'white',
+          fg: 'green',
           bg: 'black',
         };
       }
       case 'inactive': {
         return {
-          fg: 'black',
+          fg: 'green',
           bg: 'white',
         };
       }
       case 'active': {
         return {
-          fg: 'white',
+          fg: 'green',
+          bg: 'red',
+        };
+      }
+      case 'activeClue': {
+        return {
+          fg: 'green',
           bg: 'blue',
         };
       }
     }
   })();
+  const content = (() => {
+    if (props.clueNumber != null) {
+      return '⁰';
+    }
+    return '';
+  })();
 
   return (
     <text
       style={style}
-      top={props.row + 1}
-      left={props.column * 3 + 1}
+      top={props.row}
+      left={props.column * 3}
       width={3}
       height={1}
       padding={0}
-      align="center"
-      valign="middle"
-    >
-      h
-    </text>
+      content={content}
+    />
   );
 }
 
@@ -84,6 +84,7 @@ function firstCell(grid: Grid): CellCoordinates {
 }
 
 type ActiveCell = CellCoordinates & {
+  transpose(): void;
   next(): void;
   left(): void;
   right(): void;
@@ -157,6 +158,9 @@ function useActiveCell(grid: Grid): ActiveCell {
     },
 
     next() {},
+    transpose() {
+      setDirection((dir) => (dir === 'down' ? 'across' : 'down'));
+    },
   };
 }
 
@@ -193,48 +197,104 @@ function App({
     screen.key('up', () => {
       activeCell.up();
     });
+
+    screen.key('space', () => {
+      activeCell.transpose();
+    });
   }, [screen]);
+
+  const downClue = puzzle.getDownClue(activeCell.row, activeCell.column);
+  const acrossClue = puzzle.getAcrossClue(activeCell.row, activeCell.column);
+
+  const activeClue = activeCell.direction === 'down' ? downClue : acrossClue;
 
   return (
     <>
-      <box
-        label={puzzle.title}
-        top="center"
+      <box bottom={6} width="75%">
+        <box
+          label={puzzle.title}
+          top="center"
+          left="center"
+          width={puzzle.width * 3 + 2}
+          height={puzzle.height + 2}
+          {...commonBoxProperties}
+        >
+          {grid.map((rowCells, row) =>
+            rowCells.map(({ black }, column) => {
+              const kind = (() => {
+                if (black) {
+                  return 'black';
+                }
+
+                if (activeCell.row === row && activeCell.column === column) {
+                  return 'active';
+                }
+
+                if (activeCell.direction === 'down') {
+                  if (
+                    downClue.column === column &&
+                    downClue.row <= row &&
+                    downClue.row + downClue.length > row
+                  ) {
+                    return 'activeClue';
+                  }
+                } else {
+                  if (
+                    acrossClue.row === row &&
+                    acrossClue.column <= column &&
+                    acrossClue.column + acrossClue.length > column
+                  ) {
+                    return 'activeClue';
+                  }
+                }
+
+                return 'inactive';
+              })();
+
+              return (
+                <Cell
+                  key={`${row}-${column}`}
+                  row={row}
+                  column={column}
+                  kind={kind}
+                  clueNumber={(() => {
+                    const clueNumber = clues.across
+                      .concat(clues.down)
+                      .find(
+                        (clue) => clue.row === row && clue.column === column,
+                      )?.clueNumber;
+                    if (clueNumber != null) {
+                      return clueNumber;
+                    }
+                  })()}
+                />
+              );
+            }),
+          )}
+        </box>
+      </box>
+      <text
+        label={
+          activeClue
+            ? `Clue #${activeClue?.clueNumber} ${activeCell.direction}`
+            : '<no clue>'
+        }
         width="75%"
-        height="100%"
+        height={3}
+        bottom={0}
+        left={0}
         {...commonBoxProperties}
       >
-        {grid.map((row, rowIndex) =>
-          row.map(({ black }, columnIndex) => {
-            const kind = (() => {
-              if (black) {
-                return 'black';
-              }
+        {activeCell.direction === 'across' ? acrossClue.text : downClue.text}
+      </text>
 
-              if (
-                activeCell.row === rowIndex &&
-                activeCell.column === columnIndex
-              ) {
-                return 'active';
-              }
-
-              return 'inactive';
-            })();
-
-            return (
-              <Cell
-                key={`${rowIndex}-${columnIndex}`}
-                row={rowIndex}
-                column={columnIndex}
-                kind={kind}
-              />
-            );
-          }),
-        )}
-      </box>
       <list
         label="Across"
+        style={{ selected: { fg: 'blue' } }}
         items={clues.across.map((clue) => `#${clue.clueNumber}. ${clue.text}`)}
+        selected={clues.across.findIndex(
+          (clue) => clue.clueNumber === acrossClue.clueNumber,
+        )}
         top={0}
         right={0}
         width="25%"
@@ -245,6 +305,9 @@ function App({
       <list
         label="Down"
         items={clues.down.map((clue) => `#${clue.clueNumber}. ${clue.text}`)}
+        selected={clues.down.findIndex(
+          (clue) => clue.clueNumber === downClue.clueNumber,
+        )}
         bottom={0}
         right={0}
         width="25%"

@@ -3,7 +3,8 @@ import type * as wasmType from '../rust/pkg';
 type Clue = {
   clueNumber: number;
   text: string;
-  cellIndex: number;
+  row: number;
+  column: number;
   length: number;
 };
 
@@ -26,11 +27,27 @@ export class Puzzle {
     return this.puzzle.title;
   }
 
+  public get height(): number {
+    return this.puzzle.height;
+  }
+
+  public get width(): number {
+    return this.puzzle.width;
+  }
+
   public clues(): Clues {
     return this.puzzle.clues();
   }
 
   public grid(): Grid {
     return this.puzzle.grid();
+  }
+
+  public getAcrossClue(row: number, column: number): Clue | null {
+    return this.puzzle.getAcrossClue(row, column);
+  }
+
+  public getDownClue(row: number, column: number): Clue | null {
+    return this.puzzle.getDownClue(row, column);
   }
 }

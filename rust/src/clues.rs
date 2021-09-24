@@ -8,8 +8,8 @@ pub struct Clue {
     #[serde(rename = "clueNumber")]
     pub clue_number: usize,
     pub text: String,
-    #[serde(rename = "cellIndex")]
-    pub cell_index: usize,
+    pub column: usize,
+    pub row: usize,
     pub length: usize,
 }
 
@@ -48,7 +48,8 @@ impl Clues {
                         .next()
                         .ok_or(Error::msg("Ran out of provided clues"))?
                         .to_string(),
-                    cell_index: index,
+                    row: grid.row(index),
+                    column: grid.col(index),
                     length: len_across,
                 });
 
@@ -66,8 +67,9 @@ impl Clues {
                         .next()
                         .ok_or(Error::msg("Ran out of provided clues"))?
                         .to_string(),
-                    cell_index: index,
-                    length: len_across,
+                    row: grid.row(index),
+                    column: grid.col(index),
+                    length: len_down,
                 });
 
                 square_has_clue = true;

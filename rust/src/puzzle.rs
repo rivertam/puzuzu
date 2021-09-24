@@ -3,6 +3,7 @@ use crate::extension::Extension;
 use crate::grid::Grid;
 use crate::header::Header;
 use crate::puzzle_buffer::PuzzleBuffer;
+use crate::Clue;
 use crate::Clues;
 use anyhow::{Context, Error, Result};
 use std::collections::HashMap;
@@ -23,7 +24,8 @@ pub struct Puzzle {
     #[wasm_bindgen(getter_with_clone)]
     pub copyright: String,
 
-    pub(crate) fill: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub fill: String,
 
     pub(crate) solution: String,
 
@@ -59,6 +61,22 @@ impl Puzzle {
         JsValue::from_serde(&grid).map_err(|error| {
             JsValue::from_str(&format!("Failed to convert to JS value: {:?}", error))
         })
+    }
+
+    #[wasm_bindgen(js_name = getAcrossClue)]
+    pub fn get_across_clue_js(&self, row: usize, column: usize) -> JsValue {
+        self.get_across_clue(row, column)
+            .map(JsValue::from_serde)
+            .and_then(|res| res.ok())
+            .unwrap_or(JsValue::NULL)
+    }
+
+    #[wasm_bindgen(js_name = getDownClue)]
+    pub fn get_down_clue_js(&self, row: usize, column: usize) -> JsValue {
+        self.get_down_clue(row, column)
+            .map(JsValue::from_serde)
+            .and_then(|res| res.ok())
+            .unwrap_or(JsValue::NULL)
     }
 }
 
@@ -242,6 +260,30 @@ impl Puzzle {
 
         Ok(checksum)
     }
+
+    pub fn get_across_clue(&self, row: usize, column: usize) -> Option<&Clue> {
+        self.clues.across.iter().find(|clue| {
+            let column_range = clue.column..(clue.column + clue.length);
+            clue.row == row && column_range.contains(&column)
+        })
+    }
+
+    pub fn get_down_clue(&self, row: usize, column: usize) -> Option<&Clue> {
+        self.clues.down.iter().find(|clue| {
+            let row_range = clue.row..(clue.row + clue.length);
+            if clue.column == 2 {
+                println!(
+                    "{} Checking {} against range {:?}",
+                    clue.text, row, row_range
+                );
+            }
+            clue.column == column && row_range.contains(&row)
+        })
+    }
+
+    pub fn grid<'a>(&'a self) -> Grid<'a> {
+        Grid::for_puzzle(&self)
+    }
 }
 
 #[cfg(test)]
@@ -287,12 +329,13 @@ mod tests {
         let bytes = std::fs::read("../test_files/washpost.puz").unwrap();
         let puzzle = Puzzle::from_puz(bytes).unwrap();
 
-        assert_eq!(puzzle.clues.across, Vec::<Clue>::new());
-
         assert_eq!(
-            puzzle.clues.across.len() * puzzle.clues.down.len(),
+            puzzle.clues.across.len() + puzzle.clues.down.len(),
             puzzle.header.clue_count
         );
+
+        let clue = puzzle.get_across_clue(0, 5).unwrap();
+        assert_eq!(clue.clue_number, 5);
 
         Ok(())
     }
