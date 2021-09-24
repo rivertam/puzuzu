@@ -13,7 +13,7 @@ type Clues = {
   down: Array<Clue>;
 };
 
-export type Grid = Array<Array<{ black: boolean }>>;
+export type Grid = Array<Array<{ black: boolean; solution: string }>>;
 
 export class Puzzle {
   static async fromPuz(puzData: Uint8Array) {
@@ -33,6 +33,10 @@ export class Puzzle {
 
   public get width(): number {
     return this.puzzle.width;
+  }
+
+  public get solutionState(): 'Unlocked' | 'Locked' {
+    return this.puzzle.solutionState as 'Unlocked' | 'Locked';
   }
 
   public clues(): Clues {

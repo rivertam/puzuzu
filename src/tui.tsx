@@ -20,6 +20,7 @@ type CellProps = {
   kind: 'black' | 'active' | 'activeClue' | 'inactive';
   clueNumber?: number;
   userSolution: string;
+  realSolution: string;
 };
 
 function Scoreboard() {
@@ -78,9 +79,9 @@ function Cell(props: CellProps) {
   })();
   const content = (() => {
     if (props.clueNumber != null) {
-      return `⁰${props.userSolution}`;
+      return `⁰${props.realSolution}`;
     }
-    return ` ${props.userSolution}`;
+    return ` ${props.realSolution}`;
   })();
 
   return (
@@ -366,6 +367,7 @@ function App({
                   column={column}
                   kind={kind}
                   userSolution={userSolution[row][column]}
+                  realSolution={grid[row][column].solution}
                   clueNumber={(() => {
                     const clueNumber = clues.across
                       .concat(clues.down)
@@ -410,7 +412,7 @@ function App({
         width="25%"
         height="50%"
         {...commonBoxProperties}
-      ></list>
+      />
 
       <list
         label="Down"

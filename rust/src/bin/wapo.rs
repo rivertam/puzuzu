@@ -45,6 +45,7 @@ fn main() -> Result<()> {
 
     let clue = puzzle.get_down_clue(3, 2).unwrap();
     println!("{:?} :)", clue);
+    println!("Solution: {:?}", puzzle.solution);
 
     Ok(())
 }

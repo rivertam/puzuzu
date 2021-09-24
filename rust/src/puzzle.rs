@@ -27,7 +27,8 @@ pub struct Puzzle {
     #[wasm_bindgen(getter_with_clone)]
     pub fill: String,
 
-    pub(crate) solution: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub solution: String,
 
     pub(crate) all_clues: Vec<String>,
     #[wasm_bindgen(skip)]
@@ -77,6 +78,11 @@ impl Puzzle {
             .map(JsValue::from_serde)
             .and_then(|res| res.ok())
             .unwrap_or(JsValue::NULL)
+    }
+
+    #[wasm_bindgen(getter, js_name = solutionState)]
+    pub fn solution_state_js(&self) -> String {
+        format!("{:?}", self.header.solution_state)
     }
 }
 
@@ -132,7 +138,10 @@ impl Puzzle {
         // the end of the file, usually \r\n
         let postscript = buffer.upcoming().into();
 
-        let clues = Clues::new(Grid::new(&fill, header.width, header.height), &all_clues)?;
+        let clues = Clues::new(
+            Grid::new(&fill, &solution, header.width, header.height),
+            &all_clues,
+        )?;
 
         let puz = Self {
             header,
@@ -288,7 +297,7 @@ impl Puzzle {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Clue, Puzzle, PuzzleType, SolutionState};
+    use crate::{Puzzle, PuzzleType, SolutionState};
     use anyhow::Result;
 
     #[test]
