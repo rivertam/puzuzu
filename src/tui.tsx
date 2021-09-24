@@ -1,3 +1,4 @@
+import { cloneDeep } from 'lodash';
 import * as fs from 'fs';
 import * as blessed from 'blessed';
 import { render } from 'react-blessed';
@@ -18,6 +19,7 @@ type CellProps = {
   row: number;
   kind: 'black' | 'active' | 'activeClue' | 'inactive';
   clueNumber?: number;
+  userSolution: string;
 };
 
 function Cell(props: CellProps) {
@@ -51,9 +53,9 @@ function Cell(props: CellProps) {
   })();
   const content = (() => {
     if (props.clueNumber != null) {
-      return '⁰';
+      return `⁰${props.userSolution}`;
     }
-    return '';
+    return ` ${props.userSolution}`;
   })();
 
   return (
@@ -157,9 +159,15 @@ function useActiveCell(grid: Grid): ActiveCell {
       setDirection('down');
     },
 
-    next() {},
     transpose() {
       setDirection((dir) => (dir === 'down' ? 'across' : 'down'));
+    },
+    next() {
+      if (direction === 'down') {
+        this.down();
+      } else {
+        this.right();
+      }
     },
   };
 }
@@ -203,10 +211,64 @@ function App({
     });
   }, [screen]);
 
+  useEffect(() => {
+    const alphabet = [
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      'g',
+      'h',
+      'i',
+      'j',
+      'k',
+      'l',
+      'm',
+      'n',
+      'o',
+      'p',
+      'q',
+      'r',
+      's',
+      't',
+      'u',
+      'v',
+      'w',
+      'x',
+      'y',
+      'z',
+    ];
+
+    const onKeyPress = (ch: string) => {
+      setUserSolution((currentSolution) => {
+        const newSolution = cloneDeep(currentSolution);
+        newSolution[activeCell.row][activeCell.column] = ch;
+        return newSolution;
+      });
+      activeCell.next();
+    };
+
+    alphabet.forEach((letter) => {
+      screen.key(letter, onKeyPress);
+    });
+
+    return () => {
+      alphabet.forEach((letter) => {
+        screen.unkey(letter, onKeyPress);
+      });
+    };
+  }, [screen, activeCell]);
+
   const downClue = puzzle.getDownClue(activeCell.row, activeCell.column);
   const acrossClue = puzzle.getAcrossClue(activeCell.row, activeCell.column);
 
   const activeClue = activeCell.direction === 'down' ? downClue : acrossClue;
+
+  const [userSolution, setUserSolution] = useState(() => {
+    return grid.map((rowCells) => rowCells.map(() => ' '));
+  });
 
   return (
     <>
@@ -257,6 +319,7 @@ function App({
                   row={row}
                   column={column}
                   kind={kind}
+                  userSolution={userSolution[row][column]}
                   clueNumber={(() => {
                     const clueNumber = clues.across
                       .concat(clues.down)
@@ -331,7 +394,7 @@ program.action(async (args) => {
   });
 
   // Adding a way to quit the program
-  screen.key(['escape', 'q', 'C-c'], () => {
+  screen.key(['escape', 'C-c'], () => {
     return process.exit(0);
   });
 
