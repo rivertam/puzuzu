@@ -217,9 +217,15 @@ impl Puzzle {
         // for the checksum to work these fields must be added in order with
         // null termination, followed by all non-empty clues without null
         // termination, followed by notes (but only for version >= 1.3)
-        checksum = data_checksum(&encode_zstring(&self.title)?, checksum);
-        checksum = data_checksum(&encode_zstring(&self.author)?, checksum);
-        checksum = data_checksum(&encode_zstring(&self.copyright)?, checksum);
+        if self.title.len() > 0 {
+            checksum = data_checksum(&encode_zstring(&self.title)?, checksum);
+        }
+        if self.author.len() > 0 {
+            checksum = data_checksum(&encode_zstring(&self.author)?, checksum);
+        }
+        if self.copyright.len() > 0 {
+            checksum = data_checksum(&encode_zstring(&self.copyright)?, checksum);
+        }
 
         checksum = self
             .all_clues
@@ -230,7 +236,7 @@ impl Puzzle {
 
         let (major, minor) = self.header.version_tuple()?;
         // notes included in global checksum starting v1.3 of format
-        if major > 1 || major == 1 && minor >= 3 {
+        if major > 1 || major == 1 && minor >= 3 && self.notes.len() > 0 {
             checksum = data_checksum(&encode_zstring(&self.notes)?, checksum)
         }
 
