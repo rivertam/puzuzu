@@ -22,30 +22,55 @@ type CellProps = {
   userSolution: string;
 };
 
+function Scoreboard() {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+
+    setInterval(() => {
+      const now = Date.now();
+
+      setElapsedSeconds(Math.round((now - start) / 1000));
+    }, 1000);
+  }, []);
+
+  return (
+    <text
+      height={3}
+      width={20}
+      right={0}
+      top={0}
+      content={`${elapsedSeconds}s`}
+      {...commonBoxProperties}
+    />
+  );
+}
+
 function Cell(props: CellProps) {
   const style = (() => {
     switch (props.kind) {
       case 'black': {
         return {
-          fg: 'green',
+          fg: 'white',
           bg: 'black',
         };
       }
       case 'inactive': {
         return {
-          fg: 'green',
+          fg: 'black',
           bg: 'white',
         };
       }
       case 'active': {
         return {
-          fg: 'green',
+          fg: 'white',
           bg: 'red',
         };
       }
       case 'activeClue': {
         return {
-          fg: 'green',
+          fg: 'white',
           bg: 'blue',
         };
       }
@@ -65,7 +90,6 @@ function Cell(props: CellProps) {
       left={props.column * 3}
       width={3}
       height={1}
-      padding={0}
       content={content}
     />
   );
@@ -158,7 +182,6 @@ function useActiveCell(grid: Grid): ActiveCell {
 
       setDirection('down');
     },
-
     transpose() {
       setDirection((dir) => (dir === 'down' ? 'across' : 'down'));
     },
@@ -273,6 +296,7 @@ function App({
   return (
     <>
       <box bottom={6} width="75%">
+        <Scoreboard />
         <box
           label={puzzle.title}
           top="center"
@@ -336,6 +360,7 @@ function App({
           )}
         </box>
       </box>
+
       <text
         label={
           activeClue
@@ -353,10 +378,10 @@ function App({
 
       <list
         label="Across"
-        style={{ selected: { fg: 'blue' } }}
+        style={{ item: { fg: 'white' }, selected: { fg: 'blue' } }}
         items={clues.across.map((clue) => `#${clue.clueNumber}. ${clue.text}`)}
         selected={clues.across.findIndex(
-          (clue) => clue.clueNumber === acrossClue.clueNumber,
+          (clue) => clue.clueNumber === acrossClue?.clueNumber,
         )}
         top={0}
         right={0}
@@ -369,7 +394,7 @@ function App({
         label="Down"
         items={clues.down.map((clue) => `#${clue.clueNumber}. ${clue.text}`)}
         selected={clues.down.findIndex(
-          (clue) => clue.clueNumber === downClue.clueNumber,
+          (clue) => clue.clueNumber === downClue?.clueNumber,
         )}
         bottom={0}
         right={0}
