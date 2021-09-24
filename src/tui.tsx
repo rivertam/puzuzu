@@ -112,6 +112,7 @@ function firstCell(grid: Grid): CellCoordinates {
 type ActiveCell = CellCoordinates & {
   transpose(): void;
   next(): void;
+  back(): void;
   left(): void;
   right(): void;
   up(): void;
@@ -190,6 +191,13 @@ function useActiveCell(grid: Grid): ActiveCell {
         this.down();
       } else {
         this.right();
+      }
+    },
+    back() {
+      if (direction === 'down') {
+        this.up();
+      } else {
+        this.left();
       }
     },
   };
@@ -277,10 +285,24 @@ function App({
       screen.key(letter, onKeyPress);
     });
 
+    const onBackspace = () => {
+      setUserSolution((currentSolution) => {
+        const newSolution = cloneDeep(currentSolution);
+        newSolution[activeCell.row][activeCell.column] = ' ';
+        return newSolution;
+      });
+
+      activeCell.back();
+    };
+
+    screen.key('backspace', onBackspace);
+
     return () => {
       alphabet.forEach((letter) => {
         screen.unkey(letter, onKeyPress);
       });
+
+      screen.unkey('backspace', onBackspace);
     };
   }, [screen, activeCell]);
 
