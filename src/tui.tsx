@@ -23,18 +23,31 @@ type CellProps = {
   realSolution: string;
 };
 
-function Scoreboard() {
+function Scoreboard({ wrongCells }: { wrongCells: number }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const success = wrongCells === 0;
 
   useEffect(() => {
     const start = Date.now();
 
-    setInterval(() => {
+    if (success) {
+      return;
+    }
+
+    const interval = setInterval(() => {
       const now = Date.now();
 
       setElapsedSeconds(Math.round((now - start) / 1000));
     }, 1000);
-  }, []);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [success]);
+
+  const content = success
+    ? `Winnar! ${elapsedSeconds}s`
+    : `${elapsedSeconds}s | ${wrongCells} left`;
 
   return (
     <text
@@ -42,7 +55,7 @@ function Scoreboard() {
       width={20}
       right={0}
       top={0}
-      content={`${elapsedSeconds}s`}
+      content={content}
       {...commonBoxProperties}
     />
   );
@@ -79,9 +92,9 @@ function Cell(props: CellProps) {
   })();
   const content = (() => {
     if (props.clueNumber != null) {
-      return `⁰${props.realSolution}`;
+      return `⁰${props.userSolution}`;
     }
-    return ` ${props.realSolution}`;
+    return ` ${props.userSolution}`;
   })();
 
   return (
@@ -244,6 +257,11 @@ function App({
   }, [screen]);
 
   useEffect(() => {
+    // don't let user keep typing if they have already succeeded
+    if (wrongCells.length === 0) {
+      return;
+    }
+
     const alphabet = [
       'a',
       'b',
@@ -276,7 +294,7 @@ function App({
     const onKeyPress = (ch: string) => {
       setUserSolution((currentSolution) => {
         const newSolution = cloneDeep(currentSolution);
-        newSolution[activeCell.row][activeCell.column] = ch;
+        newSolution[activeCell.row][activeCell.column] = ch.toUpperCase();
         return newSolution;
       });
       activeCell.next();
@@ -316,10 +334,28 @@ function App({
     return grid.map((rowCells) => rowCells.map(() => ' '));
   });
 
+  // check whether the user's solution wins
+  const wrongCells = useMemo(() => {
+    const cells: Array<CellCoordinates> = [];
+    for (let row = 0; row < grid.length; ++row) {
+      for (let column = 0; column < grid[row].length; ++column) {
+        if (grid[row][column].black) {
+          continue;
+        }
+
+        if (grid[row][column].solution !== userSolution[row][column]) {
+          cells.push({ row, column });
+        }
+      }
+    }
+
+    return cells;
+  }, [userSolution, grid]);
+
   return (
     <>
       <box bottom={6} width="75%">
-        <Scoreboard />
+        <Scoreboard wrongCells={wrongCells.length} />
         <box
           label={puzzle.title}
           top="center"
@@ -444,7 +480,7 @@ program.action(async (args) => {
 
   // Adding a way to quit the program
   screen.key(['escape', 'C-c'], () => {
-    return process.exit(0);
+    process.exit(0);
   });
 
   render(<App puzzle={puzzle} screen={screen} />, screen);
