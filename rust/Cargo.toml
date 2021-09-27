@@ -3,6 +3,13 @@ name = "puzuzu"
 version = "0.1.0"
 authors = ["Ben Berman <ben.m.berman@gmail.com>"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "A crossword puz file parser"
+homepage = "https://github.com/rivertam/puzuzu"
+documentation = "https://github.com/rivertam/puzuzu"
+repository = "https://github.com/rivertam/puzuzu"
+readme = "../README.md"
+keywords = ["crossword", "puz", "wasm"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

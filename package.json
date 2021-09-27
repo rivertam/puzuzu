@@ -5,7 +5,7 @@
   "main": "./dist/main.js",
   "types": "./dist/lib.d.ts",
   "bin": {
-    "puzuzu-tui": "./dist/tui.js"
+    "puzuzu": "./dist/tui.js"
   },
   "devDependencies": {
     "@types/blessed": "^0.1.19",
