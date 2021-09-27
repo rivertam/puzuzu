@@ -5,10 +5,11 @@
   "main": "./dist/main.js",
   "types": "./dist/lib.d.ts",
   "bin": {
-    "puzuzu": "./dist/tui.js"
+    "puzuzu": "./tui.js"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "tui.js"
   ],
   "devDependencies": {
     "@types/blessed": "^0.1.19",

@@ -5,7 +5,7 @@ const WasmPackPlugin = require('@wasm-tool/wasm-pack-plugin');
 module.exports = {
   entry: {
     lib: './src/lib.ts',
-    tui: './src/tui.tsx',
+    tui: './src/puzuzu-tui.js',
   },
   module: {
     rules: [
