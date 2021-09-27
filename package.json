@@ -7,6 +7,9 @@
   "bin": {
     "puzuzu": "./dist/tui.js"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "devDependencies": {
     "@types/blessed": "^0.1.19",
     "@types/lodash": "^4.14.173",
