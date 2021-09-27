@@ -86,11 +86,11 @@ impl Puzzle {
     pub fn solution_state_js(&self) -> String {
         format!("{:?}", self.header.solution_state)
     }
-}
 
-#[wasm_bindgen(js_name = parsePuz)]
-pub fn parse_puz(data: &[u8]) -> std::result::Result<Puzzle, JsValue> {
-    Puzzle::from_puz(data.into()).map_err(|error| JsValue::from_str(&format!("{:?}", error)))
+    #[wasm_bindgen(js_name = fromPuz)]
+    pub fn from_puz_js(data: &[u8]) -> std::result::Result<Puzzle, JsValue> {
+        Puzzle::from_puz(data.into()).map_err(|error| JsValue::from_str(&format!("{:?}", error)))
+    }
 }
 
 impl Puzzle {

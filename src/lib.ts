@@ -18,7 +18,7 @@ export type Grid = Array<Array<{ black: boolean; solution: string }>>;
 export class Puzzle {
   static async fromPuz(puzData: Uint8Array) {
     const wasm = await import('../rust/pkg');
-    return new Puzzle(wasm.parsePuz(puzData));
+    return new Puzzle(wasm.Puzzle.fromPuz(puzData));
   }
 
   private constructor(private puzzle: wasmType.Puzzle) {}
