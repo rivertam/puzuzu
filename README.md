@@ -1,6 +1,6 @@
 # Puzuzu
 
-> [Puzuuuuuzuuuuuu](https://www.youtube.com/watch?v=lUwGj_DmHUo)
+> [Puzuuuuuzuuuuuu](https://www.youtube.com/watch?v=u0DhVzw6LrQ)
 
 [![asciicast](https://asciinema.org/a/QyRtCVSFU3m0RgQY1njprx2Og.svg)](https://asciinema.org/a/QyRtCVSFU3m0RgQY1njprx2Og)
 
