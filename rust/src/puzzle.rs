@@ -6,7 +6,6 @@ use crate::puzzle_buffer::PuzzleBuffer;
 use crate::Clue;
 use crate::Clues;
 use anyhow::{Context, Error, Result};
-use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 const ACROSSDOWN: &'static str = "ACROSS&DOWN";
@@ -14,8 +13,10 @@ const ACROSSDOWN: &'static str = "ACROSS&DOWN";
 /// Represents a crossword puzzle
 #[wasm_bindgen]
 pub struct Puzzle {
+    #[allow(dead_code)]
     pub(crate) preamble: Vec<u8>,
     pub(crate) header: Header,
+    #[allow(dead_code)]
     pub(crate) postscript: Vec<u8>,
     #[wasm_bindgen(getter_with_clone)]
     pub title: String,
@@ -34,6 +35,7 @@ pub struct Puzzle {
     #[wasm_bindgen(skip)]
     pub clues: Clues,
     pub(crate) notes: String,
+    #[allow(dead_code)]
     pub(crate) extensions: Vec<Extension>,
 }
 

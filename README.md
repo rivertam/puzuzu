@@ -124,3 +124,13 @@ The source code for the crate can be found in the `./rust` directory.
 - I used @alexdej's [puzpy](https://github.com/alexdej/puzpy) as a reference
   implementation for much of the initial implementation and testing. I hope to
   eventually port all of the tests and functionality from
+
+## License
+
+This project is licensed under either of
+
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+  http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.

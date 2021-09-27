@@ -1,6 +1,5 @@
 use crate::data_checksum::data_checksum;
 use anyhow::{Context, Error, Result};
-use std::collections::HashMap;
 
 struct ExtensionHeader {
     pub code: [u8; 4],

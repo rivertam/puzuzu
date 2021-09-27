@@ -1,6 +1,6 @@
 use crate::grid::Grid;
 use crate::square::Square;
-use anyhow::{Context, Error, Result};
+use anyhow::{Error, Result};
 use serde::Serialize;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
